@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'locations',
     'subscriptions',
     'notifications',
+    'dashboard',
 ]
 
 # --- Middleware ---
@@ -47,7 +48,7 @@ ROOT_URLCONF = 'phoneguard.urls'
 WSGI_APPLICATION = 'phoneguard.wsgi.application'
 ASGI_APPLICATION = 'phoneguard.asgi.application'
 
-# --- Templates (required by django.contrib.admin) ---
+# --- Templates ---
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -102,12 +103,17 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
 }
 
-# --- CORS (web dashboard will call the API) ---
+# --- CORS ---
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+# --- Auth redirects (dashboard) ---
+LOGIN_URL = 'dashboard:login'
+LOGIN_REDIRECT_URL = 'dashboard:home'
+LOGOUT_REDIRECT_URL = 'dashboard:login'
 
 # --- i18n / TZ ---
 LANGUAGE_CODE = 'en-us'
@@ -117,6 +123,7 @@ USE_TZ = True
 
 # --- Static ---
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

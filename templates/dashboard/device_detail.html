@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block title %}{{ device.display_name }} · Phone-Locator{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'dashboard:locations' %}"
+       class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+        ← Back to map
+    </a>
+</div>
+
+<!-- Header -->
+<div class="mb-8 flex items-start justify-between flex-wrap gap-4">
+    <div class="flex items-center gap-4">
+        <div class="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center">
+            <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="7" y="2" width="10" height="20" rx="2"/>
+                <line x1="11" y1="18" x2="13" y2="18"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">{{ device.display_name }}</h1>
+            <p class="text-sm text-slate-500">{{ device.nickname }}</p>
+        </div>
+    </div>
+    <div>
+        {% if device.status == 'active' %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-sm font-medium">
+                <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Active
+            </span>
+        {% elif device.status == 'lost' %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-sm font-medium">
+                <span class="h-2 w-2 rounded-full bg-amber-500"></span> Lost
+            </span>
+        {% elif device.status == 'stolen' %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-3 py-1 text-sm font-medium">
+                <span class="h-2 w-2 rounded-full bg-red-500"></span> Stolen
+            </span>
+        {% else %}
+            <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-sm font-medium">
+                {{ device.get_status_display }}
+            </span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- ===================== -->
+    <!-- LEFT: Map + coord row -->
+    <!-- ===================== -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="font-semibold text-slate-900">Location</h2>
+                <div class="text-xs text-slate-500">
+                    {% if latest %}
+                        Updated {{ latest.recorded_at|timesince }} ago
+                    {% else %}
+                        No location yet
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if latest %}
+                <div id="detail-map" class="h-96 w-full"></div>
+            {% else %}
+                <div class="h-96 w-full flex items-center justify-center bg-slate-50 text-slate-400 text-sm">
+                    <div class="text-center px-6">
+                        <svg class="mx-auto h-10 w-10 text-slate-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                            <circle cx="12" cy="9" r="2"/>
+                        </svg>
+                        This device hasn't reported a location yet.<br>
+                        Install the mobile app to start tracking.
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if latest %}
+        <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <div class="text-xs text-slate-500">Latitude</div>
+                <div class="text-sm font-mono text-slate-900 mt-1">{{ latest.latitude }}</div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <div class="text-xs text-slate-500">Longitude</div>
+                <div class="text-sm font-mono text-slate-900 mt-1">{{ latest.longitude }}</div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <div class="text-xs text-slate-500">Accuracy</div>
+                <div class="text-sm text-slate-900 mt-1">
+                    {% if latest.accuracy_m %}{{ latest.accuracy_m|floatformat:0 }} m{% else %}—{% endif %}
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <div class="text-xs text-slate-500">Source</div>
+                <div class="text-sm text-slate-900 mt-1">{{ latest.get_source_display }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ============================= -->
+    <!-- RIGHT: Info, Actions, Events  -->
+    <!-- ============================= -->
+    <div>
+
+        <!-- Device information -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100">
+                <h2 class="font-semibold text-slate-900">Device information</h2>
+            </div>
+            <table class="w-full text-sm">
+                <tbody class="divide-y divide-slate-100">
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">Platform</td>
+                        <td class="px-5 py-3 text-slate-900">{{ device.get_platform_display }}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">OS</td>
+                        <td class="px-5 py-3 text-slate-900">{{ device.os_version|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">Phone</td>
+                        <td class="px-5 py-3 text-slate-900">{{ device.phone_number|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">Email</td>
+                        <td class="px-5 py-3 text-slate-900 break-all">{{ device.account_email|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">IMEI</td>
+                        <td class="px-5 py-3 text-slate-900 font-mono text-xs">
+                            {% if device.imei %}{{ device.imei }}{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">Serial</td>
+                        <td class="px-5 py-3 text-slate-900 font-mono text-xs">{{ device.serial_number|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">Registered</td>
+                        <td class="px-5 py-3 text-slate-900">{{ device.registered_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">Last seen</td>
+                        <td class="px-5 py-3 text-slate-900">
+                            {% if device.last_seen_at %}{{ device.last_seen_at|timesince }} ago{% else %}Never{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">Battery</td>
+                        <td class="px-5 py-3 text-slate-900">
+                            {% if latest.battery_percent %}{{ latest.battery_percent }}%{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">Network</td>
+                        <td class="px-5 py-3 text-slate-900">{{ latest.network_operator|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-5 py-3 text-slate-500">Consent</td>
+                        <td class="px-5 py-3">
+                            {% if device.consent_given %}
+                                <span class="text-emerald-600 font-medium">Given</span>
+                            {% else %}
+                                <span class="text-red-600 font-medium">Not given</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-6 bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100">
+                <h2 class="font-semibold text-slate-900">Actions</h2>
+            </div>
+            <div class="p-4 space-y-2">
+                <form method="post" action="{% url 'dashboard:device_status' device.pk %}">
+                    {% csrf_token %}
+                    {% if device.status != 'lost' %}
+                        <button name="status" value="lost"
+                                class="w-full rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 transition">
+                            Mark as lost
+                        </button>
+                    {% endif %}
+                    {% if device.status != 'stolen' %}
+                        <button name="status" value="stolen"
+                                class="w-full mt-2 rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-100 transition">
+                            Mark as stolen
+                        </button>
+                    {% endif %}
+                    {% if device.status != 'active' %}
+                        <button name="status" value="active"
+                                class="w-full mt-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 transition">
+                            Mark as recovered
+                        </button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Security events -->
+        <div class="mt-6 bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="font-semibold text-slate-900">Security events</h2>
+                <span class="text-xs text-slate-500">{{ events|length }}</span>
+            </div>
+
+            {% if events %}
+                <ul class="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+                    {% for event in events %}
+                        <li class="px-5 py-3 {% if not event.is_read %}bg-amber-50/40{% endif %}">
+                            <div class="flex items-start gap-3">
+                                <div class="h-8 w-8 rounded-full flex items-center justify-center shrink-0
+                                            {% if event.kind == 'too_many_failed_unlocks' or event.kind == 'sim_changed' or event.kind == 'sim_removed' %}bg-red-100 text-red-600
+                                            {% elif event.kind == 'power_off' or event.kind == 'low_battery' %}bg-amber-100 text-amber-600
+                                            {% elif event.kind == 'power_on' or event.kind == 'recovered' %}bg-emerald-100 text-emerald-600
+                                            {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                    {% if 'sim' in event.kind %}
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <rect x="4" y="2" width="16" height="20" rx="2"/>
+                                            <path d="M8 6h8v4H8z"/>
+                                        </svg>
+                                    {% elif 'unlock' in event.kind %}
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <rect x="5" y="11" width="14" height="10" rx="2"/>
+                                            <path d="M8 11V7a4 4 0 118 0v4"/>
+                                        </svg>
+                                    {% elif 'power' in event.kind %}
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M18.36 6.64a9 9 0 11-12.72 0"/>
+                                            <line x1="12" y1="2" x2="12" y2="12"/>
+                                        </svg>
+                                    {% else %}
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <circle cx="12" cy="12" r="9"/>
+                                            <path d="M12 8v4M12 16h.01"/>
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-sm font-medium text-slate-900">
+                                        {{ event.get_kind_display }}
+                                    </div>
+                                    {% if event.message %}
+                                        <div class="text-xs text-slate-500 mt-0.5">{{ event.message }}</div>
+                                    {% endif %}
+                                    <div class="text-xs text-slate-400 mt-1">
+                                        {{ event.occurred_at|date:"M d, Y H:i" }}
+                                        {% if event.latitude and event.longitude %}
+                                            · <a class="text-emerald-600 hover:text-emerald-700"
+                                                  href="https://www.openstreetmap.org/?mlat={{ event.latitude }}&mlon={{ event.longitude }}#map=16/{{ event.latitude }}/{{ event.longitude }}"
+                                                  target="_blank">
+                                                {{ event.latitude|floatformat:4 }}, {{ event.longitude|floatformat:4 }}
+                                              </a>
+                                        {% endif %}
+                                        {% if event.battery_percent %}
+                                            · 🔋 {{ event.battery_percent }}%
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="p-6 text-center text-sm text-slate-400">
+                    No security events yet.
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+    <!-- end right column -->
+
+</div>
+<!-- end grid -->
+{% endblock %}
+
+{% block extra_js %}
+{% if latest %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const lat = {{ latest.latitude }};
+        const lng = {{ latest.longitude }};
+        const accuracy = {{ latest.accuracy_m|default:"null" }};
+
+        const map = L.map('detail-map').setView([lat, lng], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+        }).addTo(map);
+
+        L.marker([lat, lng]).addTo(map)
+            .bindPopup('<strong>{{ device.display_name }}</strong><br>{{ latest.recorded_at|date:"M d, Y H:i" }}')
+            .openPopup();
+
+        if (accuracy) {
+            L.circle([lat, lng], {
+                radius: accuracy,
+                color: '#10b981',
+                fillColor: '#10b981',
+                fillOpacity: 0.15,
+                weight: 1,
+            }).addTo(map);
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

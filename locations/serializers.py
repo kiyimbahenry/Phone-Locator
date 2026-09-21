@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Location
+from .models import Location, DeviceEvent
 
 
 class LocationPingSerializer(serializers.ModelSerializer):
@@ -49,3 +49,23 @@ class LocationReadSerializer(serializers.ModelSerializer):
             'source', 'battery_percent', 'network_operator',
             'recorded_at', 'received_at',
         )
+
+
+class DeviceEventSerializer(serializers.ModelSerializer):
+    """
+    Used by the DEVICE app to report a security event:
+    power-off, SIM change, failed unlock, etc.
+    """
+    class Meta:
+        model = DeviceEvent
+        fields = (
+            'kind', 'message', 'metadata',
+            'latitude', 'longitude', 'battery_percent',
+            'occurred_at',
+        )
+
+    def validate_kind(self, value):
+        valid = {c[0] for c in DeviceEvent.Kind.choices}
+        if value not in valid:
+            raise serializers.ValidationError(f"Unknown event kind: {value}")
+        return value

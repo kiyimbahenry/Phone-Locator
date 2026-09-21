@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Alerts · Phone-Locator{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-semibold text-slate-900">Alerts</h1>
+    <p class="text-sm text-slate-500 mt-1">
+        Security events from all your devices.
+    </p>
+</div>
+
+{% if events %}
+    <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+        {% for event in events %}
+            <a href="{% url 'dashboard:device_detail' event.device.pk %}"
+               class="block px-6 py-4 hover:bg-slate-50 transition {% if not event.is_read %}bg-amber-50/40{% endif %}">
+                <div class="flex items-start gap-4">
+                    <div class="h-9 w-9 rounded-full flex items-center justify-center shrink-0
+                                {% if event.kind == 'too_many_failed_unlocks' or event.kind == 'sim_changed' or event.kind == 'sim_removed' %}bg-red-100 text-red-600
+                                {% elif event.kind == 'power_off' or event.kind == 'low_battery' %}bg-amber-100 text-amber-600
+                                {% elif event.kind == 'power_on' or event.kind == 'recovered' %}bg-emerald-100 text-emerald-600
+                                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                        </svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="text-sm font-semibold text-slate-900">
+                                {{ event.get_kind_display }}
+                            </div>
+                            <div class="text-xs text-slate-400 shrink-0">
+                                {{ event.occurred_at|timesince }} ago
+                            </div>
+                        </div>
+                        <div class="text-sm text-slate-600 mt-0.5">
+                            {{ event.device.display_name }} — {{ event.device.nickname }}
+                        </div>
+                        {% if event.message %}
+                            <div class="text-xs text-slate-500 mt-1">{{ event.message }}</div>
+                        {% endif %}
+                        {% if event.latitude and event.longitude %}
+                            <div class="text-xs text-slate-400 mt-1">
+                                📍 {{ event.latitude|floatformat:4 }}, {{ event.longitude|floatformat:4 }}
+                                {% if event.battery_percent %}· 🔋 {{ event.battery_percent }}%{% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center">
+        <svg class="mx-auto h-10 w-10 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+        </svg>
+        <p class="mt-3 text-slate-500">No alerts yet.</p>
+        <p class="text-sm text-slate-400 mt-1">
+            You'll see SIM changes, failed unlocks, power-offs, and other security events here.
+        </p>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,32 +1,20 @@
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.utils import timezone
 
 from devices.models import Device
-from .models import Location
-from .serializers import LocationPingSerializer, LocationReadSerializer
+from .models import Location, DeviceEvent
+from .serializers import (
+    LocationPingSerializer,
+    LocationReadSerializer,
+    DeviceEventSerializer,
+)
 
 
 class LocationPingView(APIView):
-    """
-    POST /api/locations/ping/
-
-    Body:
-        {
-          "device_id": 3,
-          "latitude": 0.3476,
-          "longitude": 32.5825,
-          "accuracy_m": 18,
-          "source": "gps",
-          "battery_percent": 63,
-          "network_operator": "MTN",
-          "recorded_at": "2026-01-20T12:38:00Z"
-        }
-
-    The authenticated user must OWN device_id.
-    """
+    """POST /api/locations/ping/ — a device uploads a new location."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -53,10 +41,8 @@ class LocationPingView(APIView):
 
         serializer = LocationPingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         location = serializer.save(device=device)
 
-        # bump the device last_seen
         device.last_seen_at = timezone.now()
         device.save(update_fields=['last_seen_at', 'updated_at'])
 
@@ -67,12 +53,7 @@ class LocationPingView(APIView):
 
 
 class LatestLocationsView(APIView):
-    """
-    GET /api/locations/latest/
-
-    Returns the latest location for each of the user's devices.
-    Devices with no locations yet are returned with location=null.
-    """
+    """GET /api/locations/latest/ — latest location per user device."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -93,3 +74,53 @@ class LatestLocationsView(APIView):
             })
 
         return Response({'devices': payload})
+
+
+class EventCreateView(APIView):
+    """
+    POST /api/locations/events/
+
+    Body:
+        {
+          "device_id": 3,
+          "kind": "power_off",
+          "message": "...",
+          "latitude": 0.3476,
+          "longitude": 32.5825,
+          "battery_percent": 42,
+          "occurred_at": "2026-01-20T22:15:00Z"
+        }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        device_id = request.data.get('device_id')
+        if not device_id:
+            return Response(
+                {'detail': 'device_id is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            device = Device.objects.get(pk=device_id, owner=request.user)
+        except Device.DoesNotExist:
+            return Response(
+                {'detail': 'Device not found or not yours.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = DeviceEventSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        event = serializer.save(device=device)
+
+        device.last_seen_at = timezone.now()
+        device.save(update_fields=['last_seen_at', 'updated_at'])
+
+        return Response(
+            {
+                'id': event.pk,
+                'kind': event.kind,
+                'occurred_at': event.occurred_at,
+            },
+            status=status.HTTP_201_CREATED,
+        )

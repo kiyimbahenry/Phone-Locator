@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Locations · Phone-Locator{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900">Locations</h1>
+        <p class="text-sm text-slate-500 mt-1">
+            Latest known location of each registered device.
+        </p>
+    </div>
+    <div class="text-xs text-slate-500">
+        <span class="inline-flex items-center gap-1">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Active
+        </span>
+        <span class="ml-3 inline-flex items-center gap-1">
+            <span class="h-2 w-2 rounded-full bg-amber-500"></span> Lost
+        </span>
+        <span class="ml-3 inline-flex items-center gap-1">
+            <span class="h-2 w-2 rounded-full bg-red-500"></span> Stolen
+        </span>
+        <span class="ml-3 inline-flex items-center gap-1">
+            <span class="h-2 w-2 rounded-full bg-slate-400"></span> No data
+        </span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Map -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div id="all-map" class="h-[32rem] w-full bg-slate-50"></div>
+        </div>
+    </div>
+
+    <!-- Device list -->
+    <div>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="font-semibold text-slate-900">Devices</h2>
+                <span class="text-xs text-slate-500">{{ devices|length }}</span>
+            </div>
+
+            {% if devices %}
+                <ul class="divide-y divide-slate-100 max-h-[32rem] overflow-y-auto">
+                    {% for row in devices %}
+                        <li>
+                            <a href="{% url 'dashboard:device_detail' row.device.pk %}"
+                               class="block px-5 py-4 hover:bg-slate-50 transition">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="font-medium text-slate-900 truncate">{{ row.device.display_name }}</div>
+                                        <div class="text-xs text-slate-500 mt-0.5 truncate">
+                                            {% if row.location %}
+                                                {{ row.location.latitude|floatformat:4 }}, {{ row.location.longitude|floatformat:4 }}
+                                            {% else %}
+                                                No location yet
+                                            {% endif %}
+                                        </div>
+                                        {% if row.location %}
+                                            <div class="text-xs text-slate-400 mt-0.5">
+                                                {{ row.location.recorded_at|timesince }} ago
+                                                {% if row.location.battery_percent %}
+                                                    · 🔋 {{ row.location.battery_percent }}%
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="shrink-0">
+                                        {% if row.device.status == 'active' %}
+                                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                                        {% elif row.device.status == 'lost' %}
+                                            <span class="h-2.5 w-2.5 rounded-full bg-amber-500 inline-block"></span>
+                                        {% elif row.device.status == 'stolen' %}
+                                            <span class="h-2.5 w-2.5 rounded-full bg-red-500 inline-block"></span>
+                                        {% else %}
+                                            <span class="h-2.5 w-2.5 rounded-full bg-slate-400 inline-block"></span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="p-8 text-center text-sm text-slate-500">
+                    No devices yet.
+                    <a href="{% url 'dashboard:devices' %}"
+                       class="text-emerald-600 hover:text-emerald-700 font-medium">Register one →</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const map = L.map('all-map').setView([0.3476, 32.5825], 7); // default: Kampala
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+        }).addTo(map);
+
+        const devices = [
+            {% for row in devices %}
+                {% if row.location %}
+                {
+                    id: {{ row.device.pk }},
+                    name: "{{ row.device.display_name|escapejs }}",
+                    nickname: "{{ row.device.nickname|escapejs }}",
+                    status: "{{ row.device.status }}",
+                    lat: {{ row.location.latitude }},
+                    lng: {{ row.location.longitude }},
+                    accuracy: {{ row.location.accuracy_m|default:"null" }},
+                    time: "{{ row.location.recorded_at|date:'M d, H:i' }}",
+                    url: "{% url 'dashboard:device_detail' row.device.pk %}"
+                },
+                {% endif %}
+            {% endfor %}
+        ];
+
+        if (devices.length === 0) {
+            return;
+        }
+
+        const colorFor = (status) => {
+            if (status === 'active') return '#10b981';
+            if (status === 'lost') return '#f59e0b';
+            if (status === 'stolen') return '#ef4444';
+            return '#94a3b8';
+        };
+
+        const bounds = [];
+
+        devices.forEach(d => {
+            const color = colorFor(d.status);
+
+            const icon = L.divIcon({
+                className: '',
+                html: `<div style="
+                            background: ${color};
+                            width: 18px; height: 18px;
+                            border-radius: 50%;
+                            border: 3px solid white;
+                            box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+                        "></div>`,
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+            });
+
+            const marker = L.marker([d.lat, d.lng], { icon }).addTo(map);
+            marker.bindPopup(`
+                <div style="min-width:180px">
+                    <div style="font-weight:600">${d.name}</div>
+                    <div style="font-size:12px;color:#64748b">${d.nickname}</div>
+                    <div style="font-size:12px;margin-top:6px">${d.lat.toFixed(5)}, ${d.lng.toFixed(5)}</div>
+                    <div style="font-size:11px;color:#94a3b8">${d.time}</div>
+                    <a href="${d.url}" style="display:inline-block;margin-top:8px;font-size:12px;color:#059669;font-weight:500">Open details →</a>
+                </div>
+            `);
+
+            if (d.accuracy) {
+                L.circle([d.lat, d.lng], {
+                    radius: d.accuracy,
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.12,
+                    weight: 1,
+                }).addTo(map);
+            }
+
+            bounds.push([d.lat, d.lng]);
+        });
+
+        if (bounds.length > 1) {
+            map.fitBounds(bounds, { padding: [40, 40] });
+        } else if (bounds.length === 1) {
+            map.setView(bounds[0], 15);
+        }
+    });
+</script>
+{% endblock %}
