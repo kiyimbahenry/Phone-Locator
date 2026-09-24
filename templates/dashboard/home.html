@@ -5,7 +5,7 @@
 <div class="mb-8">
     <h1 class="text-2xl font-semibold text-slate-900">Welcome back, {{ user.username }}</h1>
     <p class="text-sm text-slate-500 mt-1">
-        Here's what's happening with your devices and family.
+        Here's what's happening with your devices and children.
     </p>
 </div>
 
@@ -20,11 +20,11 @@
         </div>
     </a>
 
-    <a href="{% url 'dashboard:family' %}"
+    <a href="{% url 'parenting:home' %}"
        class="block bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition">
-        <div class="text-sm font-medium text-slate-500">Family members</div>
+        <div class="text-sm font-medium text-slate-500">Parenting</div>
         <div class="mt-2 text-3xl font-semibold text-slate-900">{{ family_count }}</div>
-        <div class="mt-1 text-xs text-slate-400">Sharing location with you</div>
+        <div class="mt-1 text-xs text-slate-400">Children you're monitoring</div>
     </a>
 
     <a href="{% url 'dashboard:alerts' %}"
@@ -92,18 +92,24 @@
     {% endif %}
 </section>
 
-<!-- Placeholder for family -->
+<!-- Parenting section -->
 <section>
     <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-slate-900">Family</h2>
-        <a href="{% url 'dashboard:family' %}"
+        <h2 class="text-lg font-semibold text-slate-900">Parenting</h2>
+        <a href="{% url 'parenting:home' %}"
            class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
             Manage →
         </a>
     </div>
 
     <div class="bg-white rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-        Family sharing will appear here once you invite members.
+        Add a child to start managing their device, screen time, and content protection.
+        <div class="mt-3">
+            <a href="{% url 'parenting:add_child' %}"
+               class="inline-block text-sm font-medium text-emerald-600 hover:text-emerald-700">
+                + Add a child →
+            </a>
+        </div>
     </div>
 </section>
 {% endblock %}

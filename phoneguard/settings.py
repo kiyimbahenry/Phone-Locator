@@ -29,11 +29,12 @@ INSTALLED_APPS = [
     'subscriptions',
     'notifications',
     'dashboard',
+    'parenting',
 ]
 
 # --- Middleware ---
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',   # must be near top
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -125,5 +126,22 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# --- Email ---
+# Development: print emails to the console (see them in the runserver terminal).
+# Production: set EMAIL_BACKEND to SMTP via .env and provide real credentials.
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND',
+    default='django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = config('EMAIL_HOST', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config(
+    'DEFAULT_FROM_EMAIL',
+    default='Phone-Locator <noreply@phone-locator.local>'
+)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}{{ child.name }} · Phone-Locator{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'parenting:home' %}"
+       class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+        ← Back to Parenting
+    </a>
+</div>
+
+<div class="mb-8 flex items-start justify-between flex-wrap gap-4">
+    <div class="flex items-center gap-4">
+        <div class="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center">
+            <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M4 21v-2a4 4 0 014-4h8a4 4 0 014 4v2"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">{{ child.name }}</h1>
+            <p class="text-sm text-slate-500">
+                {{ child.device.display_name }} · {{ child.get_age_group_display }}
+            </p>
+        </div>
+    </div>
+    <div>
+        {% if child.is_paired %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-sm font-medium">
+                <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Paired
+            </span>
+        {% else %}
+            <a href="{% url 'parenting:generate_pairing' child.pk %}"
+               class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-sm font-medium hover:bg-amber-200 transition">
+                ⚠ Not paired — generate code
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- LEFT: location + activity -->
+    <div class="lg:col-span-2 space-y-6">
+
+        <!-- Location card -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="font-semibold text-slate-900">Location</h2>
+                {% if latest_location %}
+                    <span class="text-xs text-slate-500">
+                        {{ latest_location.recorded_at|timesince }} ago
+                    </span>
+                {% endif %}
+            </div>
+            {% if latest_location %}
+                <div id="child-map" class="h-72 w-full"></div>
+            {% else %}
+                <div class="h-72 flex items-center justify-center bg-slate-50 text-slate-400 text-sm">
+                    No location reported yet.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- App usage today -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100">
+                <h2 class="font-semibold text-slate-900">App usage today</h2>
+            </div>
+            {% if usage_today %}
+                <ul class="divide-y divide-slate-100">
+                    {% for app in usage_today %}
+                        <li class="px-5 py-3 flex items-center justify-between">
+                            <div>
+                                <div class="text-sm font-medium text-slate-900">{{ app.app_name }}</div>
+                                <div class="text-xs text-slate-400 font-mono">{{ app.app_identifier }}</div>
+                            </div>
+                            <div class="text-sm font-medium text-slate-700">{{ app.total_minutes }}m</div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="p-6 text-center text-sm text-slate-400">
+                    No app usage reported yet.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Web blocked today -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="font-semibold text-slate-900">Web blocked today</h2>
+                <span class="text-xs text-slate-500">{{ web_blocked_today|length }}</span>
+            </div>
+            {% if web_blocked_today %}
+                <ul class="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                    {% for log in web_blocked_today %}
+                        <li class="px-5 py-3">
+                            <div class="text-sm text-slate-900 font-mono truncate">{{ log.domain }}</div>
+                            <div class="text-xs text-slate-400 mt-0.5">
+                                {{ log.get_category_display }} · {{ log.blocked_at|date:"H:i" }}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="p-6 text-center text-sm text-slate-400">
+                    Nothing blocked today.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- RIGHT: controls + alerts -->
+    <div class="space-y-6">
+
+        <!-- Screen time -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100">
+                <h2 class="font-semibold text-slate-900">Screen time</h2>
+            </div>
+            <div class="p-5 text-sm space-y-3">
+                {% if screen_rule %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Weekdays</span>
+                        <span class="text-slate-900 font-medium">{{ screen_rule.weekday_limit_minutes }} min</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Weekend</span>
+                        <span class="text-slate-900 font-medium">{{ screen_rule.weekend_limit_minutes }} min</span>
+                    </div>
+                    {% if screen_rule.bedtime_start and screen_rule.bedtime_end %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-500">Bedtime</span>
+                            <span class="text-slate-900 font-medium">
+                                {{ screen_rule.bedtime_start|time:"H:i" }} – {{ screen_rule.bedtime_end|time:"H:i" }}
+                            </span>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-slate-400 text-xs">No rule set yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- App rules -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="font-semibold text-slate-900">App rules</h2>
+                <span class="text-xs text-slate-500">{{ rules|length }}</span>
+            </div>
+            {% if rules %}
+                <ul class="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                    {% for rule in rules %}
+                        <li class="px-5 py-3 flex items-center justify-between">
+                            <div class="text-sm text-slate-900">{{ rule.app_name }}</div>
+                            <div>
+                                {% if rule.status == 'blocked' %}
+                                    <span class="text-xs rounded-full bg-red-100 text-red-700 px-2 py-0.5 font-medium">Blocked</span>
+                                {% elif rule.status == 'limited' %}
+                                    <span class="text-xs rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 font-medium">
+                                        {{ rule.daily_limit_minutes }}m/day
+                                    </span>
+                                {% else %}
+                                    <span class="text-xs rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 font-medium">Allowed</span>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="p-6 text-center text-sm text-slate-400">
+                    No app rules yet.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Recent alerts -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="font-semibold text-slate-900">Recent alerts</h2>
+                <span class="text-xs text-slate-500">{{ alerts|length }}</span>
+            </div>
+            {% if alerts %}
+                <ul class="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                    {% for alert in alerts %}
+                        <li class="px-5 py-3">
+                            <div class="text-sm text-slate-900">{{ alert.get_kind_display }}</div>
+                            {% if alert.message %}
+                                <div class="text-xs text-slate-500 mt-0.5">{{ alert.message }}</div>
+                            {% endif %}
+                            <div class="text-xs text-slate-400 mt-0.5">
+                                {{ alert.occurred_at|date:"M d, H:i" }}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="p-6 text-center text-sm text-slate-400">
+                    No alerts yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if latest_location %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const lat = {{ latest_location.latitude }};
+        const lng = {{ latest_location.longitude }};
+        const accuracy = {{ latest_location.accuracy_m|default:"null" }};
+
+        const map = L.map('child-map').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+        }).addTo(map);
+
+        L.marker([lat, lng]).addTo(map)
+            .bindPopup('<strong>{{ child.name }}</strong><br>{{ latest_location.recorded_at|date:"M d, H:i" }}')
+            .openPopup();
+
+        if (accuracy) {
+            L.circle([lat, lng], {
+                radius: accuracy,
+                color: '#10b981', fillColor: '#10b981',
+                fillOpacity: 0.15, weight: 1,
+            }).addTo(map);
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

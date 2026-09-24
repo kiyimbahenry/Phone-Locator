@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Pairing code · {{ child.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'parenting:child_detail' child.pk %}"
+       class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+        ← Back to {{ child.name }}
+    </a>
+</div>
+
+<div class="max-w-lg mx-auto mt-8">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-emerald-50 border-b border-emerald-100">
+            <h1 class="text-lg font-semibold text-emerald-900">Pairing code for {{ child.name }}</h1>
+        </div>
+
+        <div class="p-8 text-center">
+            <p class="text-sm text-slate-500 mb-4">
+                Enter this code in the Phone-Locator app on {{ child.name }}'s phone.
+            </p>
+
+            <div class="text-5xl font-mono font-bold tracking-widest text-slate-900 mb-4">
+                {{ code.code|slice:":3" }} {{ code.code|slice:"3:" }}
+            </div>
+
+            <p class="text-xs text-slate-400">
+                Expires in {{ code.expires_at|timeuntil }}<br>
+                {{ code.expires_at|date:"M d, Y H:i" }}
+            </p>
+        </div>
+
+        <form method="post" class="border-t border-slate-200 bg-slate-50 px-6 py-4 flex items-center justify-between">
+            {% csrf_token %}
+            <span class="text-xs text-slate-500">Code didn't work?</span>
+            <button type="submit"
+                    class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition">
+                Generate new code
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

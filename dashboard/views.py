@@ -8,15 +8,46 @@ from django.utils import timezone
 from devices.forms import DeviceForm
 from devices.models import Device
 from locations.models import DeviceEvent
+from accounts.forms import DashboardRegisterForm
 
 
 class DashboardLoginView(LoginView):
     template_name = 'registration/login.html'
     redirect_authenticated_user = True
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['register_form'] = DashboardRegisterForm()
+        return ctx
+
 
 class DashboardLogoutView(LogoutView):
     next_page = reverse_lazy('dashboard:login')
+
+
+def register_view(request):
+    """Handles the create-account form posted from the login page modal."""
+    if request.user.is_authenticated:
+        return redirect('dashboard:home')
+
+    if request.method == 'POST':
+        form = DashboardRegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(
+                request,
+                f"Welcome, {user.username}! Your account is ready. Please log in."
+            )
+            return redirect('dashboard:login')
+        else:
+            messages.error(request, "Please fix the errors below and try again.")
+            return render(request, 'registration/login.html', {
+                'form': LoginView().get_form_class()(request),
+                'register_form': form,
+                'show_register_modal': True,
+            })
+
+    return redirect('dashboard:login')
 
 
 @login_required
@@ -97,26 +128,17 @@ def device_status(request, pk):
 @login_required
 def locations_view(request):
     device_qs = Device.objects.filter(owner=request.user).order_by('-last_seen_at')
-
     rows = []
     for device in device_qs:
         latest = device.locations.order_by('-recorded_at').first()
         rows.append({'device': device, 'location': latest})
 
-    return render(request, 'dashboard/locations.html', {
-        'devices': rows,
-    })
-
-
-@login_required
-def family_view(request):
-    return render(request, 'dashboard/family.html')
+    return render(request, 'dashboard/locations.html', {'devices': rows})
 
 
 @login_required
 def alerts_view(request):
     base_qs = DeviceEvent.objects.filter(device__owner=request.user)
-
     unread_count = base_qs.filter(is_read=False).count()
     events = base_qs.order_by('-occurred_at')[:100]
 
