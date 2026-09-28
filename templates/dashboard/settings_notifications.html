@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Notifications · Settings{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'dashboard:settings' %}" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+        ← Back to Settings
+    </a>
+</div>
+
+<div class="max-w-2xl">
+    <h1 class="text-2xl font-semibold text-slate-900 mb-2">Notifications</h1>
+    <p class="text-sm text-slate-500 mb-6">Choose which emails you want to receive.</p>
+
+    <form method="post" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        {% csrf_token %}
+
+        <div class="divide-y divide-slate-100">
+            <label class="flex items-start gap-3 px-6 py-4 cursor-pointer hover:bg-slate-50">
+                {{ form.notify_email_security }}
+                <div>
+                    <div class="text-sm font-medium text-slate-900">Security alerts</div>
+                    <p class="text-xs text-slate-500 mt-0.5">SIM changes, failed unlocks, stolen-device events.</p>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 px-6 py-4 cursor-pointer hover:bg-slate-50">
+                {{ form.notify_email_family }}
+                <div>
+                    <div class="text-sm font-medium text-slate-900">Family events</div>
+                    <p class="text-xs text-slate-500 mt-0.5">Arrivals, departures, screen-time events for your children.</p>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 px-6 py-4 cursor-pointer hover:bg-slate-50">
+                {{ form.notify_email_app_requests }}
+                <div>
+                    <div class="text-sm font-medium text-slate-900">App requests</div>
+                    <p class="text-xs text-slate-500 mt-0.5">When a child asks for approval to install an app.</p>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 px-6 py-4 cursor-pointer hover:bg-slate-50">
+                {{ form.notify_email_billing }}
+                <div>
+                    <div class="text-sm font-medium text-slate-900">Billing & subscription</div>
+                    <p class="text-xs text-slate-500 mt-0.5">Renewals, receipts, and payment issues.</p>
+                </div>
+            </label>
+        </div>
+
+        <div class="border-t border-slate-200 bg-slate-50 px-6 py-4 flex justify-end">
+            <button type="submit"
+                    class="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition">
+                Save preferences
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

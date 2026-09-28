@@ -46,4 +46,12 @@ urlpatterns = [
     path('alerts/', views.alerts_view, name='alerts'),
     path('subscription/', views.subscription_view, name='subscription'),
     path('settings/', views.settings_view, name='settings'),
+    path('settings/profile/', views.settings_profile, name='settings_profile'),
+    path('settings/notifications/', views.settings_notifications, name='settings_notifications'),
+    path('settings/privacy/', views.settings_privacy, name='settings_privacy'),
+    path('settings/preferences/', views.settings_preferences, name='settings_preferences'),
+    path('settings/password/', views.settings_password, name='settings_password'),
+    path('settings/security/', views.settings_security, name='settings_security'),
+    path('settings/download-data/', views.settings_download_data, name='settings_download_data'),
+    path('settings/delete-account/', views.settings_delete_account, name='settings_delete_account'),
 ]

@@ -9,6 +9,16 @@ from devices.forms import DeviceForm
 from devices.models import Device
 from locations.models import DeviceEvent
 from accounts.forms import DashboardRegisterForm
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+from accounts.settings_forms import (
+    ProfileForm,
+    NotificationPreferencesForm,
+    PrivacyPreferencesForm,
+    PreferencesForm,
+    StyledPasswordChangeForm,
+)
+from accounts.models import User
 
 
 class DashboardLoginView(LoginView):
@@ -155,4 +165,169 @@ def subscription_view(request):
 
 @login_required
 def settings_view(request):
+    """Overview page: links to Profile, Notifications, Privacy, Security."""
     return render(request, 'dashboard/settings.html')
+
+
+@login_required
+def settings_profile(request):
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated.')
+            return redirect('dashboard:settings_profile')
+    else:
+        form = ProfileForm(instance=request.user)
+
+    return render(request, 'dashboard/settings_profile.html', {'form': form})
+
+
+@login_required
+def settings_notifications(request):
+    if request.method == 'POST':
+        form = NotificationPreferencesForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Notification preferences saved.')
+            return redirect('dashboard:settings_notifications')
+    else:
+        form = NotificationPreferencesForm(instance=request.user)
+
+    return render(request, 'dashboard/settings_notifications.html', {'form': form})
+
+
+@login_required
+def settings_privacy(request):
+    if request.method == 'POST':
+        form = PrivacyPreferencesForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Privacy settings saved.')
+            return redirect('dashboard:settings_privacy')
+    else:
+        form = PrivacyPreferencesForm(instance=request.user)
+
+    return render(request, 'dashboard/settings_privacy.html', {'form': form})
+
+
+@login_required
+def settings_preferences(request):
+    if request.method == 'POST':
+        form = PreferencesForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Preferences saved.')
+            return redirect('dashboard:settings_preferences')
+    else:
+        form = PreferencesForm(instance=request.user)
+
+    return render(request, 'dashboard/settings_preferences.html', {'form': form})
+
+
+@login_required
+def settings_password(request):
+    if request.method == 'POST':
+        form = StyledPasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # keep the user logged in
+            messages.success(request, 'Password changed successfully.')
+            return redirect('dashboard:settings_password')
+    else:
+        form = StyledPasswordChangeForm(user=request.user)
+
+    return render(request, 'dashboard/settings_password.html', {'form': form})
+
+
+@login_required
+def settings_security(request):
+    """Placeholder — we'll wire real session tracking later."""
+    from django.contrib.sessions.models import Session
+    from django.utils import timezone
+
+    # Recent device events across all the user's devices
+    recent_events = DeviceEvent.objects.filter(
+        device__owner=request.user
+    ).order_by('-occurred_at')[:20]
+
+    return render(request, 'dashboard/settings_security.html', {
+        'recent_events': recent_events,
+        'current_session_key': request.session.session_key,
+    })
+
+
+@login_required
+def settings_download_data(request):
+    """Return a JSON dump of everything we hold about this user."""
+    from django.http import JsonResponse
+
+    user = request.user
+    payload = {
+        'profile': {
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'phone_number': user.phone_number,
+            'country': user.country,
+            'joined': user.date_joined.isoformat() if user.date_joined else None,
+        },
+        'devices': [
+            {
+                'nickname': d.nickname,
+                'imei': d.imei,
+                'serial_number': d.serial_number,
+                'phone_number': d.phone_number,
+                'platform': d.platform,
+                'status': d.status,
+                'registered_at': d.registered_at.isoformat(),
+            }
+            for d in user.devices.all()
+        ],
+        'locations': [
+            {
+                'device': loc.device.nickname,
+                'latitude': str(loc.latitude),
+                'longitude': str(loc.longitude),
+                'recorded_at': loc.recorded_at.isoformat(),
+            }
+            for loc in DeviceEvent.objects.none()  # placeholder, replace with Location later
+        ],
+        'events': [
+            {
+                'device': ev.device.nickname,
+                'kind': ev.kind,
+                'occurred_at': ev.occurred_at.isoformat(),
+            }
+            for ev in DeviceEvent.objects.filter(device__owner=user)
+        ],
+    }
+    response = JsonResponse(payload, json_dumps_params={'indent': 2})
+    response['Content-Disposition'] = (
+        f'attachment; filename="phone-locator-{user.username}.json"'
+    )
+    return response
+
+
+@login_required
+def settings_delete_account(request):
+    """Two-step deletion: confirmation page then actual delete."""
+    if request.method == 'POST':
+        confirm = request.POST.get('confirm', '').strip()
+        if confirm != request.user.username:
+            messages.error(
+                request,
+                'Please type your username exactly to confirm deletion.'
+            )
+            return redirect('dashboard:settings_delete_account')
+
+        # Log the user out and delete
+        from django.contrib.auth import logout
+        user = request.user
+        logout(request)
+        user.delete()
+        messages.success(request, 'Your account has been deleted.')
+        return redirect('dashboard:login')
+
+    return render(request, 'dashboard/settings_delete_account.html')

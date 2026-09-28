@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Privacy & Data · Settings{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'dashboard:settings' %}" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+        ← Back to Settings
+    </a>
+</div>
+
+<div class="max-w-2xl space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900 mb-2">Privacy & Data</h1>
+        <p class="text-sm text-slate-500">Control how your location data is stored and what you can export.</p>
+    </div>
+
+    <form method="post" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        {% csrf_token %}
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Location history retention</label>
+                {{ form.location_retention_days }}
+                <p class="mt-1 text-xs text-slate-500">
+                    Locations older than this are deleted automatically.
+                </p>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 bg-slate-50 px-6 py-4 flex justify-end">
+            <button type="submit"
+                    class="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition">
+                Save
+            </button>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h2 class="font-semibold text-slate-900 mb-2">Download your data</h2>
+        <p class="text-sm text-slate-500 mb-4">
+            Download a copy of everything we hold about you in JSON format.
+        </p>
+        <a href="{% url 'dashboard:settings_download_data' %}"
+           class="inline-block rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+            Download JSON
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl border border-red-200 p-6">
+        <h2 class="font-semibold text-red-700 mb-2">Delete account</h2>
+        <p class="text-sm text-slate-600 mb-4">
+            This permanently deletes your account, devices, locations, and children profiles.
+            This cannot be undone.
+        </p>
+        <a href="{% url 'dashboard:settings_delete_account' %}"
+           class="inline-block rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition">
+            Delete my account
+        </a>
+    </div>
+</div>
+{% endblock %}

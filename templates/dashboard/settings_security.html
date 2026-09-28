@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Security · Settings{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'dashboard:settings' %}" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+        ← Back to Settings
+    </a>
+</div>
+
+<div class="max-w-2xl space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900 mb-2">Security</h1>
+        <p class="text-sm text-slate-500">Password and recent account activity.</p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 p-6 flex items-center justify-between">
+        <div>
+            <h2 class="font-semibold text-slate-900">Password</h2>
+            <p class="text-sm text-slate-500 mt-0.5">Last changed on your last reset.</p>
+        </div>
+        <a href="{% url 'dashboard:settings_password' %}"
+           class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+            Change password
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <h2 class="font-semibold text-slate-900">Recent account activity</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Security events from your devices.</p>
+        </div>
+
+        {% if recent_events %}
+            <ul class="divide-y divide-slate-100">
+                {% for event in recent_events %}
+                    <li class="px-6 py-3 flex items-start justify-between gap-3">
+                        <div>
+                            <div class="text-sm font-medium text-slate-900">
+                                {{ event.get_kind_display }}
+                            </div>
+                            <div class="text-xs text-slate-500 mt-0.5">
+                                {{ event.device.nickname }}
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-400 shrink-0">
+                            {{ event.occurred_at|date:"M d, H:i" }}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="p-6 text-center text-sm text-slate-400">
+                No security events yet.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

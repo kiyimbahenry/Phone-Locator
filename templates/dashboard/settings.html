@@ -1,6 +1,94 @@
 {% extends "base.html" %}
 {% block title %}Settings · Phone-Locator{% endblock %}
+
 {% block content %}
-<h1 class="text-2xl font-semibold text-slate-900 mb-6">Settings</h1>
-<p class="text-slate-500">Profile and privacy settings coming next.</p>
+<div class="mb-8">
+    <h1 class="text-2xl font-semibold text-slate-900">Settings</h1>
+    <p class="text-sm text-slate-500 mt-1">
+        Manage your account, notifications, privacy, and security.
+    </p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl">
+
+    <a href="{% url 'dashboard:settings_profile' %}"
+       class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition">
+        <div class="flex items-center gap-3 mb-2">
+            <div class="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 21v-2a4 4 0 014-4h8a4 4 0 014 4v2"/>
+                </svg>
+            </div>
+            <h2 class="font-semibold text-slate-900">Profile</h2>
+        </div>
+        <p class="text-sm text-slate-500">
+            Your name, email, phone number, country, and profile picture.
+        </p>
+    </a>
+
+    <a href="{% url 'dashboard:settings_notifications' %}"
+       class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition">
+        <div class="flex items-center gap-3 mb-2">
+            <div class="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                </svg>
+            </div>
+            <h2 class="font-semibold text-slate-900">Notifications</h2>
+        </div>
+        <p class="text-sm text-slate-500">
+            Choose which email notifications you receive.
+        </p>
+    </a>
+
+    <a href="{% url 'dashboard:settings_privacy' %}"
+       class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition">
+        <div class="flex items-center gap-3 mb-2">
+            <div class="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="5" y="11" width="14" height="10" rx="2"/>
+                    <path d="M8 11V7a4 4 0 118 0v4"/>
+                </svg>
+            </div>
+            <h2 class="font-semibold text-slate-900">Privacy & Data</h2>
+        </div>
+        <p class="text-sm text-slate-500">
+            Location retention, download your data, delete your account.
+        </p>
+    </a>
+
+    <a href="{% url 'dashboard:settings_security' %}"
+       class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition">
+        <div class="flex items-center gap-3 mb-2">
+            <div class="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <h2 class="font-semibold text-slate-900">Security</h2>
+        </div>
+        <p class="text-sm text-slate-500">
+            Change your password, view recent account events.
+        </p>
+    </a>
+
+    <a href="{% url 'dashboard:settings_preferences' %}"
+       class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition">
+        <div class="flex items-center gap-3 mb-2">
+            <div class="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+                </svg>
+            </div>
+            <h2 class="font-semibold text-slate-900">Preferences</h2>
+        </div>
+        <p class="text-sm text-slate-500">
+            Language, time zone, and appearance.
+        </p>
+    </a>
+
+</div>
 {% endblock %}
